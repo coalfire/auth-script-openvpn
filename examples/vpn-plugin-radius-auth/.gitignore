@@ -1,0 +1,4 @@
+venv/
+*.log
+*.dictionary
+fake_auth_control_file
