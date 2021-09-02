@@ -135,16 +135,30 @@ def _is_authorized_p(server: str, credentials: dict, logger):
     return reply_code == pyrad.packet.AccessAccept
 
 
-def _any(iterable: list) -> bool:
+def any_and_not_false(iterable: list) -> bool:
     """
     Accept iter.
     A reimplementation of any,
-    which returns False on the first False,
-    True on the first value which evaluates to True,
-    or False if no values evaluate to True.
+    with the differnce that the first False short-circuits.
 
-    The purpose of this to short circuit the moment we get an auth or a denial
-    from a radius server, while letting non-responses fail over to the next server.
+    The purpose of this is to short circuit 
+    the moment we get an auth or a denial from a radius server,
+    while letting non-responses fail over to the next server.
+
+    >>> any_and_not_false([False, True, None])
+    False
+    >>> any_and_not_false([False, None, True])
+    False
+    >>> any_and_not_false([True, False, None])
+    True
+    >>> any_and_not_false([True, None, False])
+    True
+    >>> any_and_not_false([None, True, False])
+    True
+    >>> any_and_not_false([None, False, False])
+    False
+    >>> any_and_not_false([None, None])
+    False
     """
     for item in iterable:
         if item:
@@ -165,7 +179,7 @@ def is_authorized_p(credentials: dict, logger) -> bool:
     if not write_dictionary(c["dictionary"]):
         return False
 
-    return _any(
+    return any_and_not_false(
         _is_authorized_p(server, c, logger) for server in c["servers"]
     )
 
