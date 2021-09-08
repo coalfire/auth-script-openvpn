@@ -141,7 +141,7 @@ def any_and_not_false(iterable: list) -> bool:
     A reimplementation of any,
     with the differnce that the first False short-circuits.
 
-    The purpose of this is to short circuit 
+    The purpose of this is to short circuit
     the moment we get an auth or a denial from a radius server,
     while letting non-responses fail over to the next server.
 
@@ -202,7 +202,8 @@ def main():
     """
     Parse args,
     get environment,
-    pass off to is_authorized_p nad write_auth_file.
+    set umask,
+    pass off to is_authorized_p and write_auth_file.
     """
 
     parser = configargparse.ArgumentParser()
@@ -290,6 +291,9 @@ def main():
         "auth_control_file", "fake_auth_control_file"
     )
 
+    # We will be writing logs, auth_file, and possibly a dictionary.
+    # all should be 640 permissions.
+    os.umask(0o137)
     # Any exception means we should not authorize...
     try:
         authorized = is_authorized_p(credentials, logger)
