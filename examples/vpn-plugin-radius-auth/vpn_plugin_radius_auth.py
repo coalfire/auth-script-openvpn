@@ -118,10 +118,11 @@ def _is_authorized_p(server: str, credentials: dict, logger):
             reply_code = client.SendPacket(request).code
         except Exception as err:
             logger.error(
-                "error sending AccessRequest for user %s to %s:%d: %s",
+                "error sending AccessRequest for user %s to %s:%d: %s: %s",
                 username,
                 server,
                 port,
+                type(err),
                 err,
             )
             return None

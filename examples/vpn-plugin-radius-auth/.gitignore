@@ -4,3 +4,4 @@ __pycache__/
 *.dictionary
 fake_auth_control_file
 vpn-plugin-radius-auth
+sha512sums.txt
