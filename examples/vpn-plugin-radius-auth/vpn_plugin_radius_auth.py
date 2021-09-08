@@ -292,8 +292,8 @@ def main():
     )
 
     # We will be writing logs, auth_file, and possibly a dictionary.
-    # all should be 640 permissions.
-    os.umask(0o137)
+    # all should be 644 permissions.
+    os.umask(0o133)
     # Any exception means we should not authorize...
     try:
         authorized = is_authorized_p(credentials, logger)

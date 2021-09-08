@@ -3,3 +3,4 @@ __pycache__/
 *.log
 *.dictionary
 fake_auth_control_file
+vpn-plugin-radius-auth
