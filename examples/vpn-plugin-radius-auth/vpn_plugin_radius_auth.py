@@ -63,6 +63,24 @@ def write_dictionary(location: str) -> bool:
     return location
 
 
+code_meaning = {
+    1: "AccessRequest",
+    2: "AccessAccept",
+    3: "AccessReject",
+    4: "AccountingRequest",
+    5: "AccountingResponse",
+    11: "AccessChallenge",
+    12: "StatusServer",
+    13: "StatusClient",
+    40: "DisconnectRequest",
+    41: "DisconnectACK",
+    42: "DisconnectNAK",
+    43: "CoARequest",
+    44: "CoAACK",
+    45: "CoANAK",
+}
+
+
 def _is_authorized_p(server: str, credentials: dict, logger):
     """
     Accept server (str), credentials (dict), logger.
@@ -72,18 +90,15 @@ def _is_authorized_p(server: str, credentials: dict, logger):
     """
     port = credentials["port"]
     dictionary = credentials["dictionary"]
-    config = credentials["config"]
     username = credentials["username"]
     nas_ip = credentials["nas_ip"]
-    password = credentials["password"]
-    dry_run = credentials["dry_run"]
     encoded_secret = bytes(credentials["shared_secret"], encoding="utf-8")
     logger.info(
         "Creating radius client of %s:%d using dictionary %s for config %s",
         server,
         port,
         dictionary,
-        config,
+        credentials["config"],
     )
     client = Client(
         server=server,
@@ -103,7 +118,20 @@ def _is_authorized_p(server: str, credentials: dict, logger):
         User_Name=username,
         NAS_IP_Address=nas_ip,
     )
-    request["User-Password"] = request.PwCrypt(password)
+    logger.info(
+        "Encrypting password for %s",
+        username,
+    )
+    # For reasons I do not understand,
+    # we receive non-Latin characters ASCII-encoded with surrogate escapes.
+    # To feed this to pyrad.packet, we want unicode.
+    # So convert it to bytes, and back out to UTF-8.
+    recoded = (
+        credentials["password"]
+        .encode("ASCII", "surrogateescape")
+        .decode("UTF-8")
+    )
+    request["User-Password"] = request.PwCrypt(recoded)
 
     logger.info(
         "sending AccessRequest for user %s to %s:%d",
@@ -111,7 +139,7 @@ def _is_authorized_p(server: str, credentials: dict, logger):
         server,
         port,
     )
-    if dry_run is True:
+    if credentials["dry_run"] is True:
         reply_code = pyrad.packet.AccessAccept
     else:
         try:
@@ -127,8 +155,9 @@ def _is_authorized_p(server: str, credentials: dict, logger):
             )
             return None
     logger.info(
-        "got reply code %d for user %s from %s:%d",
+        "got reply code %d: %s for user %s from %s:%d",
         reply_code,
+        code_meaning.get(reply_code, "unknown"),
         username,
         server,
         port,
@@ -299,7 +328,12 @@ def main():
     try:
         authorized = is_authorized_p(credentials, logger)
     except Exception as err:
-        logger.error(err)
+        logger.error(
+            "exception authorizing %s: %s: %s",
+            credentials["username"],
+            type(err),
+            err,
+        )
         authorized = False
     logger.info("user %s authorized: %s", credentials["username"], authorized)
     try:
